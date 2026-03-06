@@ -1,29 +1,31 @@
+// src/lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const connectionString = `${process.env.DATABASE_URL}`;
+const connectionString = process.env.DATABASE_URL ?? "";
 
-// Strip ?sslmode=require because it causes pg-connection-string to override the ssl object below
+// Create a PG pool for Neon
 const pool = new Pool({
-    connectionString: connectionString.split("?")[0],
-    max: 10,
-    ssl: { rejectUnauthorized: false },
+  connectionString: connectionString.split("?")[0], // remove ?sslmode for pg adapter
+  max: 10, // limit connections
+  ssl: { rejectUnauthorized: false },
 });
+
 const adapter = new PrismaPg(pool);
 
-const prismaClientSingleton = () => {
-    return new PrismaClient({ adapter });
-};
+// Prisma client singleton
+const prismaClientSingleton = () => new PrismaClient({ adapter, log: ["error"] });
 
 declare global {
-    var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
+  var prisma: PrismaClient | undefined;
 }
 
+// Use global singleton in dev to avoid too many connections
 const prisma = globalThis.prisma ?? prismaClientSingleton();
 
-export default prisma;
-
-if (typeof window === "undefined" && process.env.NODE_ENV !== "production") {
-    globalThis.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalThis.prisma = prisma;
 }
+
+export default prisma;

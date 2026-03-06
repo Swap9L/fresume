@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Ignore database dumps
+*.dump
+*.sql
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -48,3 +52,5 @@ next-env.d.ts
 .content-collections
 
 /src/generated/prisma
+
+
