@@ -47,7 +47,7 @@ export default async function Page({ params }: { params: Promise<{ username: str
   return (
     <>
       <RefreshClient />
-      <main className="min-h-dvh relative py-12 pb-24 px-6">
+      <main className="min-h-dvh relative py-12 pt-24 pb-24 px-6">
         {isOwner && (
           <div className="absolute top-4 right-4 z-50">
             <Link
