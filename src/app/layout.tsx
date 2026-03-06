@@ -1,4 +1,4 @@
-import Navbar from "@/components/navbar";
+
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
+import { SmartNavbarServer } from "@/components/smart-navbar-server";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -23,15 +24,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(DATA.url),
   title: {
-    default: DATA.name,
-    template: `%s | ${DATA.name}`,
+    default: "Fresume",
+    template: `%s | Fresume`,
   },
   description: DATA.description,
   openGraph: {
-    title: `${DATA.name}`,
+    title: `Fresume`,
     description: DATA.description,
     url: DATA.url,
-    siteName: `${DATA.name}`,
+    siteName: `Fresume`,
     locale: "en_US",
     type: "website",
   },
@@ -47,7 +48,7 @@ export const metadata: Metadata = {
     },
   },
   twitter: {
-    title: `${DATA.name}`,
+    title: `Fresume`,
     card: "summary_large_image",
   },
   verification: {
@@ -83,10 +84,10 @@ export default function RootLayout({
                 }}
               />
             </div>
-            <div className="relative z-10 max-w-2xl mx-auto py-12 pb-24 sm:py-24 px-6">
+            <div className="relative z-10">
               {children}
             </div>
-            <Navbar />
+            <SmartNavbarServer />
           </TooltipProvider>
         </ThemeProvider>
       </body>
