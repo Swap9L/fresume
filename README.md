@@ -1,47 +1,50 @@
-<div align="center">
-<img alt="Portfolio" src="https://github.com/dillionverma/portfolio/assets/16860528/57ffca81-3f0a-4425-b31d-094f61725455" width="90%">
-</div>
+# FResume - Put your resume on the internet 🚀
 
-# Portfolio [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fdillionverma%2Fportfolio)
+**Stop sending boring PDFs.** F___ Resume is the easiest way to showcase your work, skills, and experience to the world with a beautiful, professional, and performance-optimized portfolio.
 
-Built with next.js, [shadcn/ui](https://ui.shadcn.com/), and [magic ui](https://magicui.design/), deployed on Vercel.
+## ✨ Features
 
-# Features
+- **Admin Dashboard**: Manage your projects, education, work experience, and skills through an intuitive interface.
+- **Real-time Sync**: Changes made in the dashboard reflect instantly on your resume page without a refresh.
+- **Beautiful Design**: Modern, responsive, and crafted with high-end aesthetics using Magic UI and Shadcn UI.
+- **Performance Optimized**: Built with Next.js 15 for lightning-fast load times and SEO excellence.
+- **One-Click Deploy**: Easily deploy your own instance to Vercel and claim your unique URL.
 
-- Setup only takes a few minutes by editing the [single config file](./src/data/resume.tsx)
-- Built using Next.js 14, React, Typescript, Shadcn/UI, TailwindCSS, Framer Motion, Magic UI
-- Includes a blog
-- Responsive for different devices
-- Optimized for Next.js and Vercel
+## 🛠️ Tech Stack
 
-# Getting Started Locally
+- **Framework**: [Next.js 15](https://nextjs.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Components**: [Shadcn UI](https://ui.shadcn.com/) & [Magic UI](https://magicui.design/)
+- **Database**: [Prisma](https://www.prisma.io/) with PostgreSQL
+- **Authentication**: [Better Auth](https://better-auth.com/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
 
-1. Clone this repository to your local machine:
+## 🚀 Getting Started
 
-   ```bash
-   git clone https://github.com/dillionverma/portfolio
-   ```
+### 1. Clone the repository
+```bash
+git clone https://github.com/yourusername/fresume.git
+cd fresume
+```
 
-2. Move to the cloned directory
+### 2. Install dependencies
+```bash
+pnpm install
+```
 
-   ```bash
-   cd portfolio
-   ```
+### 3. Setup Environment Variables
+Create a `.env` file based on `.env.example` and provide your database URL and authentication secrets.
 
-3. Install dependencies:
+### 4. Database Setup
+```bash
+npx prisma db push
+```
 
-   ```bash
-   pnpm install
-   ```
+### 5. Run locally
+```bash
+pnpm dev
+```
 
-4. Start the local Server:
+## 📝 License
 
-   ```bash
-   pnpm dev
-   ```
-
-5. Open the [Config file](./src/data/resume.tsx) and make changes
-
-# License
-
-Licensed under the [MIT license](https://github.com/dillionverma/portfolio/blob/main/LICENSE.md).
+Licensed under the [MIT license](LICENSE).

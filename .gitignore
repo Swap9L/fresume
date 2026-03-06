@@ -6,35 +6,43 @@
 .pnp.js
 .yarn/install-state.gz
 
-# testing
-/coverage
 
 # next.js
 /.next/
 /out/
-
-# production
 /build
+
+# testing
+/coverage
+
+# prisma generated files
+/src/generated/prisma
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # misc
 .DS_Store
 *.pem
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
+# environment variables
 .env
 .env.*
+.env*.local
 !.env.example
 
 # vercel
 .vercel
 
 # typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma local db (optional)
+prisma/dev.db
+prisma/dev.db-journal
 *.tsbuildinfo
 next-env.d.ts
 .content-collections

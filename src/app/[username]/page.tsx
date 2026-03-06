@@ -16,6 +16,7 @@ import { ArrowUpRight, Mail } from "lucide-react";
 import { DATA as STATIC_DATA } from "@/data/resume";
 import { notFound } from "next/navigation";
 import { PortfolioNavbar } from "@/components/portfolio-navbar";
+import { RefreshClient } from "@/components/refresh-client";
 
 export const dynamic = "force-dynamic";
 
@@ -23,15 +24,14 @@ const BLUR_FADE_DELAY = 0.04;
 
 export default async function Page({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
-  const resumeData = await getResumeData(username);
+  const sessionUrlHeaders = await headers();
+  const [resumeData, session] = await Promise.all([
+    getResumeData(username),
+    auth.api.getSession({ headers: sessionUrlHeaders })
+  ]);
 
   if (!resumeData) return notFound();
 
-  // Fetch session to check if this is the owner viewing their own page
-  const sessionUrlHeaders = await headers();
-  const session = await auth.api.getSession({
-    headers: sessionUrlHeaders
-  });
   const isOwner = session?.user?.username === username;
 
   const DATA: any = resumeData;
@@ -46,6 +46,7 @@ export default async function Page({ params }: { params: Promise<{ username: str
 
   return (
     <>
+      <RefreshClient />
       <main className="min-h-dvh relative py-12 pb-24 px-6">
         {isOwner && (
           <div className="absolute top-4 right-4 z-50">

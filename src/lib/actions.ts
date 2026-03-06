@@ -170,6 +170,27 @@ export async function deleteEducation(id: string) {
     revalidatePath("/", "layout");
 }
 
+export async function updateEducation(id: string, data: any) {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+
+    const education = await prisma.education.findFirst({
+        where: {
+            id,
+            resumeData: { userId: session.user.id }
+        }
+    });
+    if (!education) throw new Error("Access denied");
+
+    await prisma.education.update({
+        where: { id },
+        data: {
+            ...data
+        }
+    });
+    revalidatePath("/", "layout");
+}
+
 // Project Actions
 export async function addProject(data: any) {
     const session = await getSession();
@@ -180,7 +201,7 @@ export async function addProject(data: any) {
     });
     if (!resume) return;
 
-    const { links, ...projectData } = data;
+    const { links, website, source, ...projectData } = data;
     await prisma.project.create({
         data: {
             ...projectData,
@@ -211,6 +232,36 @@ export async function deleteProject(id: string) {
 
     await prisma.project.delete({
         where: { id }
+    });
+    revalidatePath("/", "layout");
+}
+
+export async function updateProject(id: string, data: any) {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+
+    const project = await prisma.project.findFirst({
+        where: {
+            id,
+            resumeData: { userId: session.user.id }
+        }
+    });
+    if (!project) throw new Error("Access denied");
+
+    const { links, website, source, ...projectData } = data;
+    await prisma.project.update({
+        where: { id },
+        data: {
+            ...projectData,
+            links: {
+                deleteMany: {},
+                create: (links || []).map((link: any) => ({
+                    type: link.type,
+                    href: link.href,
+                    iconName: link.iconName || "globe",
+                }))
+            }
+        }
     });
     revalidatePath("/", "layout");
 }
@@ -248,6 +299,27 @@ export async function deleteWork(id: string) {
 
     await prisma.workExperience.delete({
         where: { id }
+    });
+    revalidatePath("/", "layout");
+}
+
+export async function updateWork(id: string, data: any) {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+
+    const work = await prisma.workExperience.findFirst({
+        where: {
+            id,
+            resumeData: { userId: session.user.id }
+        }
+    });
+    if (!work) throw new Error("Access denied");
+
+    await prisma.workExperience.update({
+        where: { id },
+        data: {
+            ...data
+        }
     });
     revalidatePath("/", "layout");
 }
@@ -293,6 +365,36 @@ export async function deleteHackathon(id: string) {
 
     await prisma.hackathon.delete({
         where: { id }
+    });
+    revalidatePath("/", "layout");
+}
+
+export async function updateHackathon(id: string, data: any) {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+
+    const hackathon = await prisma.hackathon.findFirst({
+        where: {
+            id,
+            resumeData: { userId: session.user.id }
+        }
+    });
+    if (!hackathon) throw new Error("Access denied");
+
+    const { links, ...hackathonData } = data;
+    await prisma.hackathon.update({
+        where: { id },
+        data: {
+            ...hackathonData,
+            links: {
+                deleteMany: {},
+                create: (links || []).map((link: any) => ({
+                    title: link.title,
+                    href: link.href,
+                    iconName: link.iconName || "globe",
+                }))
+            }
+        }
     });
     revalidatePath("/", "layout");
 }

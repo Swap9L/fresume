@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
     getResumeData,
@@ -9,16 +9,20 @@ import {
     removeSkill,
     addEducation,
     deleteEducation,
+    updateEducation,
     addProject,
     deleteProject,
+    updateProject,
     upsertContact,
     addSocial,
     deleteSocial,
     updateSocial,
     addWork,
     deleteWork,
+    updateWork,
     addHackathon,
     deleteHackathon,
+    updateHackathon,
     deleteAccount,
     changeUserPassword,
 } from "@/lib/actions";
@@ -83,10 +87,10 @@ const Field = ({
         ) : (
             <input
                 type="text"
-                value={value}
+                value={value || ""}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-zinc-900 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-800 transition-all text-zinc-800 dark:text-zinc-200"
+                className="w-full px-3.5 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:bg-zinc-950 transition-all placeholder:text-zinc-400"
             />
         )}
     </div>
@@ -224,25 +228,55 @@ export default function AdminDashboard() {
     const [section, setSection] = useState<Section>("personal");
     const [showPreview, setShowPreview] = useState(true);
 
+    const syncChannel = useRef<BroadcastChannel | null>(null);
+
+    useEffect(() => {
+        if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+            syncChannel.current = new BroadcastChannel("resume-sync");
+        }
+        return () => syncChannel.current?.close();
+    }, []);
+
+    const pulseSync = () => {
+        syncChannel.current?.postMessage("refresh");
+    };
+
     // Education dialog state
     const [newEdu, setNewEdu] = useState({ school: "", degree: "", start: "", end: "", href: "", logoUrl: "https://avatar.vercel.sh/school" });
     const [addingEdu, setAddingEdu] = useState(false);
+    const [editingEduId, setEditingEduId] = useState<string | null>(null);
 
     // Project dialog state
-    const [newProj, setNewProj] = useState({
+    interface ProjectState {
+        title: string;
+        href: string;
+        dates: string;
+        active: boolean;
+        description: string;
+        technologies: string[];
+        image: string;
+        video: string;
+        source: string;
+        links: any[];
+    }
+    const [newProj, setNewProj] = useState<ProjectState>({
         title: "", href: "", dates: "", active: true,
-        description: "", technologies: [] as string[], image: "https://avatar.vercel.sh/project", video: "", links: [] as any[]
+        description: "", technologies: [], image: "https://avatar.vercel.sh/project", video: "",
+        source: "", links: []
     });
     const [techInput, setTechInput] = useState("");
     const [addingProj, setAddingProj] = useState(false);
+    const [editingProjId, setEditingProjId] = useState<string | null>(null);
 
     // Work dialog state
     const [newWork, setNewWork] = useState({ company: "", title: "", location: "", description: "", start: "", end: "", href: "", logoUrl: "https://avatar.vercel.sh/work", badges: [] as string[] });
     const [addingWork, setAddingWork] = useState(false);
+    const [editingWorkId, setEditingWorkId] = useState<string | null>(null);
 
     // Hackathon dialog state
     const [newHackathon, setNewHackathon] = useState({ title: "", location: "", description: "", dates: "", image: "https://avatar.vercel.sh/hackathon", links: [] as any[] });
     const [addingHackathon, setAddingHackathon] = useState(false);
+    const [editingHackathonId, setEditingHackathonId] = useState<string | null>(null);
 
     // Skill state
     const [newSkill, setNewSkill] = useState("");
@@ -286,7 +320,10 @@ export default function AdminDashboard() {
     const handleSaveProfile = async () => {
         if (!data) return;
         setSaving(true);
-        try { await updateProfile(data); } catch (e) { console.error(e); }
+        try {
+            await updateProfile(data);
+            pulseSync();
+        } catch (e) { console.error(e); }
         setSaving(false);
     };
 
@@ -297,6 +334,7 @@ export default function AdminDashboard() {
         setData({ ...data, skills: [...data.skills, s] });
         setNewSkill("");
         await addSkill(s);
+        pulseSync();
         load(true);
     };
 
@@ -304,74 +342,175 @@ export default function AdminDashboard() {
         if (!data) return;
         setData({ ...data, skills: data.skills.filter((s) => s !== skill) });
         await removeSkill(skill);
+        pulseSync();
         load(true);
     };
 
     const handleAddEducation = async () => {
         if (!newEdu.school || !newEdu.degree || !data) return;
-        const tempId = Date.now().toString();
-        setData({ ...data, education: [...data.education, { ...newEdu, id: tempId, resumeDataId: data.id }] });
+        if (editingEduId) {
+            setData({ ...data, education: data.education.map(e => e.id === editingEduId ? { ...e, ...newEdu } as any : e) });
+            await updateEducation(editingEduId, newEdu);
+        } else {
+            const tempId = Date.now().toString();
+            setData({ ...data, education: [...data.education, { ...newEdu, id: tempId, resumeDataId: data.id } as any] });
+            await addEducation(newEdu);
+        }
+        pulseSync();
         setAddingEdu(false);
+        setEditingEduId(null);
         setNewEdu({ school: "", degree: "", start: "", end: "", href: "", logoUrl: "https://avatar.vercel.sh/school" });
-        await addEducation(newEdu);
         load(true);
+    };
+
+    const handleEditEducation = (edu: any) => {
+        setNewEdu({
+            school: edu.school,
+            degree: edu.degree,
+            start: edu.start,
+            end: edu.end,
+            href: edu.href,
+            logoUrl: edu.logoUrl
+        });
+        setEditingEduId(edu.id);
+        setAddingEdu(true);
     };
 
     const handleDeleteEducation = async (id: string) => {
         if (!confirm("Delete this education entry?")) return;
-        if (data) setData({ ...data, education: data.education.filter(e => e.id !== id) });
+        if (data) setData({ ...data, education: data.education.filter(e => e.id !== id) } as any);
         await deleteEducation(id);
+        pulseSync();
         load(true);
     };
 
     const handleAddProject = async () => {
         if (!newProj.title || !data) return;
-        const tempId = Date.now().toString();
-        setData({ ...data, projects: [...data.projects, { ...newProj, id: tempId, resumeDataId: data.id }] });
+
+        // Prepare links from explicit fields
+        const links = [];
+        if (newProj.source) links.push({ type: "Source", href: newProj.source, iconName: "github" });
+
+        const projectToSave = { ...newProj, links };
+
+        if (editingProjId) {
+            setData({ ...data, projects: data.projects.map(p => p.id === editingProjId ? { ...p, ...projectToSave } as any : p) });
+            await updateProject(editingProjId, projectToSave);
+        } else {
+            const tempId = Date.now().toString();
+            setData({ ...data, projects: [...data.projects, { ...projectToSave, id: tempId, resumeDataId: data.id } as any] });
+            await addProject(projectToSave);
+        }
+        pulseSync();
         setAddingProj(false);
-        setNewProj({ title: "", href: "", dates: "", active: true, description: "", technologies: [], image: "https://avatar.vercel.sh/project", video: "", links: [] });
-        await addProject(newProj);
+        setEditingProjId(null);
+        setNewProj({ title: "", href: "", dates: "", active: true, description: "", technologies: [], image: "https://avatar.vercel.sh/project", video: "", source: "", links: [] });
         load(true);
+    };
+
+    const handleEditProject = (proj: any) => {
+        const sourceLink = proj.links?.find((l: any) => l.type === "Source")?.href || "";
+
+        setNewProj({
+            title: proj.title,
+            href: proj.href,
+            dates: proj.dates,
+            active: proj.active,
+            description: proj.description,
+            technologies: proj.technologies,
+            image: proj.image,
+            video: proj.video,
+            source: sourceLink,
+            links: proj.links
+        });
+        setEditingProjId(proj.id);
+        setAddingProj(true);
     };
 
     const handleDeleteProject = async (id: string) => {
         if (!confirm("Delete this project?")) return;
-        if (data) setData({ ...data, projects: data.projects.filter(p => p.id !== id) });
+        if (data) setData({ ...data, projects: data.projects.filter(p => p.id !== id) } as any);
         await deleteProject(id);
+        pulseSync();
         load(true);
     };
 
     const handleAddWork = async () => {
         if (!newWork.company || !newWork.title || !data) return;
-        const tempId = Date.now().toString();
-        setData({ ...data, work: [...data.work, { ...newWork, id: tempId, resumeDataId: data.id }] });
+        if (editingWorkId) {
+            setData({ ...data, work: data.work.map(w => w.id === editingWorkId ? { ...w, ...newWork } as any : w) });
+            await updateWork(editingWorkId, newWork);
+        } else {
+            const tempId = Date.now().toString();
+            setData({ ...data, work: [...data.work, { ...newWork, id: tempId, resumeDataId: data.id } as any] });
+            await addWork(newWork);
+        }
+        pulseSync();
         setAddingWork(false);
+        setEditingWorkId(null);
         setNewWork({ company: "", title: "", location: "", description: "", start: "", end: "", href: "", logoUrl: "https://avatar.vercel.sh/work", badges: [] });
-        await addWork(newWork);
         load(true);
+    };
+
+    const handleEditWork = (w: any) => {
+        setNewWork({
+            company: w.company,
+            title: w.title,
+            location: w.location,
+            description: w.description,
+            start: w.start,
+            end: w.end,
+            href: w.href,
+            logoUrl: w.logoUrl,
+            badges: w.badges
+        });
+        setEditingWorkId(w.id);
+        setAddingWork(true);
     };
 
     const handleDeleteWork = async (id: string) => {
         if (!confirm("Delete this work experience?")) return;
-        if (data) setData({ ...data, work: data.work.filter(w => w.id !== id) });
+        if (data) setData({ ...data, work: data.work.filter(w => w.id !== id) } as any);
         await deleteWork(id);
+        pulseSync();
         load(true);
     };
 
     const handleAddHackathon = async () => {
         if (!newHackathon.title || !data) return;
-        const tempId = Date.now().toString();
-        setData({ ...data, hackathons: [...data.hackathons, { ...newHackathon, id: tempId, resumeDataId: data.id }] });
+        if (editingHackathonId) {
+            setData({ ...data, hackathons: data.hackathons.map(h => h.id === editingHackathonId ? { ...h, ...newHackathon } as any : h) });
+            await updateHackathon(editingHackathonId, newHackathon);
+        } else {
+            const tempId = Date.now().toString();
+            setData({ ...data, hackathons: [...data.hackathons, { ...newHackathon, id: tempId, resumeDataId: data.id } as any] });
+            await addHackathon(newHackathon);
+        }
+        pulseSync();
         setAddingHackathon(false);
+        setEditingHackathonId(null);
         setNewHackathon({ title: "", location: "", description: "", dates: "", image: "https://avatar.vercel.sh/hackathon", links: [] });
-        await addHackathon(newHackathon);
         load(true);
+    };
+
+    const handleEditHackathon = (h: any) => {
+        setNewHackathon({
+            title: h.title,
+            location: h.location,
+            description: h.description,
+            dates: h.dates,
+            image: h.image,
+            links: h.links
+        });
+        setEditingHackathonId(h.id);
+        setAddingHackathon(true);
     };
 
     const handleDeleteHackathon = async (id: string) => {
         if (!confirm("Delete this hackathon?")) return;
-        if (data) setData({ ...data, hackathons: data.hackathons.filter(h => h.id !== id) });
+        if (data) setData({ ...data, hackathons: data.hackathons.filter(h => h.id !== id) } as any);
         await deleteHackathon(id);
+        pulseSync();
         load(true);
     };
 
@@ -381,8 +520,11 @@ export default function AdminDashboard() {
 
     const handleSaveContact = async () => {
         setSavingContact(true);
-        if (data) setData({ ...data, contact: { ...data.contact, email: contactEmail, tel: contactTel, resumeDataId: data.id, id: data.contact?.id || '', socials: data.contact?.socials || [] } });
-        try { await upsertContact({ email: contactEmail, tel: contactTel }); } catch (e) { console.error(e); }
+        if (data) setData({ ...data, contact: { ...data.contact, email: contactEmail, tel: contactTel, resumeDataId: data.id, id: data.contact?.id || '', socials: data.contact?.socials || [] } } as any);
+        try {
+            await upsertContact({ email: contactEmail, tel: contactTel });
+            pulseSync();
+        } catch (e) { console.error(e); }
         setSavingContact(false);
         load(true);
     };
@@ -390,13 +532,14 @@ export default function AdminDashboard() {
     const handleAddSocial = async () => {
         if (!newSocial.name || !newSocial.url || !data) return;
         if (editingSocialId) {
-            setData({ ...data, contact: { ...data.contact!, socials: data.contact!.socials.map(s => s.id === editingSocialId ? { ...s, ...newSocial } : s) } });
+            setData({ ...data, contact: { ...data.contact!, socials: data.contact!.socials.map(s => s.id === editingSocialId ? { ...s, ...newSocial } : s) } } as any);
             await updateSocial(editingSocialId, newSocial);
         } else {
             const tempId = Date.now().toString();
-            setData({ ...data, contact: { ...data.contact!, socials: [...(data.contact?.socials || []), { ...newSocial, id: tempId, contactId: data.contact?.id || '' }] } });
+            setData({ ...data, contact: { ...data.contact!, socials: [...(data.contact?.socials || []), { ...newSocial, id: tempId, contactId: data.contact?.id || '' }] } } as any);
             await addSocial(newSocial);
         }
+        pulseSync();
         setAddingSocial(false);
         setEditingSocialId(null);
         setNewSocial({ name: "", url: "", iconName: "", navbar: false });
@@ -417,8 +560,9 @@ export default function AdminDashboard() {
     const handleDeleteSocial = async (id: string) => {
         if (!confirm("Delete this social link?")) return;
         try {
-            if (data && data.contact) setData({ ...data, contact: { ...data.contact, socials: data.contact.socials.filter(s => s.id !== id) } });
+            if (data && data.contact) setData({ ...data, contact: { ...data.contact, socials: data.contact.socials.filter(s => s.id !== id) } } as any);
             await deleteSocial(id);
+            pulseSync();
             load(true);
         } catch (error) {
             console.error(error);
@@ -736,7 +880,11 @@ export default function AdminDashboard() {
                                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Your academic background.</p>
                                     </div>
                                     <button
-                                        onClick={() => setAddingEdu(!addingEdu)}
+                                        onClick={() => {
+                                            setAddingEdu(!addingEdu);
+                                            setEditingEduId(null);
+                                            setNewEdu({ school: "", degree: "", start: "", end: "", href: "", logoUrl: "https://avatar.vercel.sh/school" });
+                                        }}
                                         className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all"
                                     >
                                         <Plus className="size-4" /> Add
@@ -747,7 +895,7 @@ export default function AdminDashboard() {
                                 <AnimatePresence>
                                     {addingEdu && (
                                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-white dark:bg-zinc-900 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4 overflow-hidden">
-                                            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">New Education Entry</p>
+                                            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{editingEduId ? 'Edit Education Entry' : 'New Education Entry'}</p>
                                             <Field label="School / University" value={newEdu.school} onChange={(v) => setNewEdu({ ...newEdu, school: v })} placeholder="MIT" />
                                             <Field label="Degree" value={newEdu.degree} onChange={(v) => setNewEdu({ ...newEdu, degree: v })} placeholder="B.Sc. Computer Science" />
                                             <div className="grid grid-cols-2 gap-4">
@@ -756,8 +904,8 @@ export default function AdminDashboard() {
                                             </div>
                                             <Field label="Logo URL (optional)" value={newEdu.logoUrl} onChange={(v) => setNewEdu({ ...newEdu, logoUrl: v })} />
                                             <div className="flex gap-2 justify-end">
-                                                <button onClick={() => setAddingEdu(false)} className="px-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:bg-zinc-950 transition-all">Cancel</button>
-                                                <button onClick={handleAddEducation} className="px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">Save Entry</button>
+                                                <button onClick={() => { setAddingEdu(false); setEditingEduId(null); setNewEdu({ school: "", degree: "", start: "", end: "", href: "", logoUrl: "https://avatar.vercel.sh/school" }); }} className="px-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:bg-zinc-950 transition-all">Cancel</button>
+                                                <button onClick={handleAddEducation} className="px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">{editingEduId ? 'Update Entry' : 'Save Entry'}</button>
                                             </div>
                                         </motion.div>
                                     )}
@@ -777,9 +925,14 @@ export default function AdminDashboard() {
                                                     <p className="text-[11px] text-zinc-400 dark:text-zinc-500">{edu.start} – {edu.end}</p>
                                                 </div>
                                             </div>
-                                            <button onClick={() => handleDeleteEducation(edu.id)} className="p-2 rounded-xl text-zinc-400 dark:text-zinc-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-all">
-                                                <Trash2 className="size-4" />
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => handleEditEducation(edu)} className="p-2 rounded-xl text-zinc-400 dark:text-zinc-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-all">
+                                                    <Pencil className="size-4" />
+                                                </button>
+                                                <button onClick={() => handleDeleteEducation(edu.id)} className="p-2 rounded-xl text-zinc-400 dark:text-zinc-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-all">
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                     {!data?.education.length && !addingEdu && (
@@ -801,7 +954,11 @@ export default function AdminDashboard() {
                                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Where you have worked.</p>
                                     </div>
                                     <button
-                                        onClick={() => setAddingWork(true)}
+                                        onClick={() => {
+                                            setAddingWork(true);
+                                            setEditingWorkId(null);
+                                            setNewWork({ company: "", title: "", location: "", description: "", start: "", end: "", href: "", logoUrl: "https://avatar.vercel.sh/work", badges: [] });
+                                        }}
                                         className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all"
                                     >
                                         <Plus className="size-4" /> Add Experience
@@ -826,8 +983,8 @@ export default function AdminDashboard() {
                                             <Field label="Logo URL" value={newWork.logoUrl} onChange={(v) => setNewWork({ ...newWork, logoUrl: v })} placeholder="https://..." />
                                             <Field label="Description" value={newWork.description} onChange={(v) => setNewWork({ ...newWork, description: v })} placeholder="Descibe what you did..." multiline />
                                             <div className="flex gap-2 justify-end">
-                                                <button onClick={() => setAddingWork(false)} className="px-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:bg-zinc-950 transition-all">Cancel</button>
-                                                <button onClick={handleAddWork} className="px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">Save Work</button>
+                                                <button onClick={() => { setAddingWork(false); setEditingWorkId(null); setNewWork({ company: "", title: "", location: "", description: "", start: "", end: "", href: "", logoUrl: "https://avatar.vercel.sh/work", badges: [] }); }} className="px-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:bg-zinc-950 transition-all">Cancel</button>
+                                                <button onClick={handleAddWork} className="px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">{editingWorkId ? 'Update Work' : 'Save Work'}</button>
                                             </div>
                                         </motion.div>
                                     )}
@@ -841,9 +998,14 @@ export default function AdminDashboard() {
                                                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">{w.start} – {w.end}</p>
                                                 <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 line-clamp-2">{w.description}</p>
                                             </div>
-                                            <button onClick={() => handleDeleteWork(w.id)} className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-all shrink-0">
-                                                <Trash2 className="size-4" />
-                                            </button>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button onClick={() => handleEditWork(w)} className="p-1.5 rounded-lg text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-all">
+                                                    <Pencil className="size-4" />
+                                                </button>
+                                                <button onClick={() => handleDeleteWork(w.id)} className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-all">
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                     {!data?.work.length && !addingWork && (
@@ -865,7 +1027,11 @@ export default function AdminDashboard() {
                                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Events and competitions you participated in.</p>
                                     </div>
                                     <button
-                                        onClick={() => setAddingHackathon(true)}
+                                        onClick={() => {
+                                            setAddingHackathon(true);
+                                            setEditingHackathonId(null);
+                                            setNewHackathon({ title: "", location: "", description: "", dates: "", image: "https://avatar.vercel.sh/hackathon", links: [] });
+                                        }}
                                         className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all"
                                     >
                                         <Plus className="size-4" /> Add Hackathon
@@ -886,8 +1052,8 @@ export default function AdminDashboard() {
                                             <Field label="Description" value={newHackathon.description} onChange={(v) => setNewHackathon({ ...newHackathon, description: v })} placeholder="Built a cool project..." multiline />
 
                                             <div className="flex gap-2 justify-end">
-                                                <button onClick={() => setAddingHackathon(false)} className="px-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:bg-zinc-950 transition-all">Cancel</button>
-                                                <button onClick={handleAddHackathon} className="px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">Save Hackathon</button>
+                                                <button onClick={() => { setAddingHackathon(false); setEditingHackathonId(null); setNewHackathon({ title: "", location: "", description: "", dates: "", image: "https://avatar.vercel.sh/hackathon", links: [] }); }} className="px-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:bg-zinc-950 transition-all">Cancel</button>
+                                                <button onClick={handleAddHackathon} className="px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">{editingHackathonId ? 'Update Hackathon' : 'Save Hackathon'}</button>
                                             </div>
                                         </motion.div>
                                     )}
@@ -901,9 +1067,14 @@ export default function AdminDashboard() {
                                                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">{h.dates} | {h.location}</p>
                                                 <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 line-clamp-2">{h.description}</p>
                                             </div>
-                                            <button onClick={() => handleDeleteHackathon(h.id)} className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-all shrink-0">
-                                                <Trash2 className="size-4" />
-                                            </button>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button onClick={() => handleEditHackathon(h)} className="p-1.5 rounded-lg text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-all">
+                                                    <Pencil className="size-4" />
+                                                </button>
+                                                <button onClick={() => handleDeleteHackathon(h.id)} className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-all">
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                     {!data?.hackathons.length && !addingHackathon && (
@@ -926,7 +1097,11 @@ export default function AdminDashboard() {
                                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Showcase your work.</p>
                                     </div>
                                     <button
-                                        onClick={() => setAddingProj(!addingProj)}
+                                        onClick={() => {
+                                            setAddingProj(!addingProj);
+                                            setEditingProjId(null);
+                                            setNewProj({ title: "", href: "", dates: "", active: true, description: "", technologies: [], image: "https://avatar.vercel.sh/project", video: "", source: "", links: [] });
+                                        }}
                                         className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all"
                                     >
                                         <Plus className="size-4" /> Add
@@ -937,7 +1112,7 @@ export default function AdminDashboard() {
                                 <AnimatePresence>
                                     {addingProj && (
                                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-white dark:bg-zinc-900 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4 overflow-hidden">
-                                            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">New Project</p>
+                                            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{editingProjId ? 'Edit Project' : 'New Project'}</p>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <Field label="Title" value={newProj.title} onChange={(v) => setNewProj({ ...newProj, title: v })} placeholder="My Side Project" />
                                                 <Field label="Year / Dates" value={newProj.dates} onChange={(v) => setNewProj({ ...newProj, dates: v })} placeholder="2024" />
@@ -975,12 +1150,16 @@ export default function AdminDashboard() {
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <Field label="Live URL" value={newProj.href} onChange={(v) => setNewProj({ ...newProj, href: v })} placeholder="https://…" />
+                                                <Field label="Live URL (Title Link)" value={newProj.href} onChange={(v) => setNewProj({ ...newProj, href: v })} placeholder="https://..." />
+                                                <Field label="Source Code URL (e.g. GitHub)" value={newProj.source} onChange={(v) => setNewProj({ ...newProj, source: v })} placeholder="https://github.com/..." />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
                                                 <Field label="Image URL" value={newProj.image} onChange={(v) => setNewProj({ ...newProj, image: v })} placeholder="https://…" />
+                                                <Field label="Video URL (optional)" value={newProj.video} onChange={(v) => setNewProj({ ...newProj, video: v })} placeholder="https://…" />
                                             </div>
                                             <div className="flex gap-2 justify-end">
-                                                <button onClick={() => setAddingProj(false)} className="px-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:bg-zinc-950 transition-all">Cancel</button>
-                                                <button onClick={handleAddProject} className="px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">Save Project</button>
+                                                <button onClick={() => { setAddingProj(false); setEditingProjId(null); setNewProj({ title: "", href: "", dates: "", active: true, description: "", technologies: [], image: "https://avatar.vercel.sh/project", video: "", source: "", links: [] }); }} className="px-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:bg-zinc-950 transition-all">Cancel</button>
+                                                <button onClick={handleAddProject} className="px-4 py-2 text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">{editingProjId ? 'Update Project' : 'Save Project'}</button>
                                             </div>
                                         </motion.div>
                                     )}
@@ -1006,11 +1185,9 @@ export default function AdminDashboard() {
                                                         <p className="text-xs text-zinc-400 dark:text-zinc-500">{proj.dates}</p>
                                                     </div>
                                                     <div className="flex items-center gap-1 shrink-0">
-                                                        {proj.href && (
-                                                            <a href={proj.href} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:bg-zinc-800/50 transition-all">
-                                                                <ExternalLink className="size-3.5" />
-                                                            </a>
-                                                        )}
+                                                        <button onClick={() => handleEditProject(proj)} className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-all">
+                                                            <Pencil className="size-3.5" />
+                                                        </button>
                                                         <button onClick={() => handleDeleteProject(proj.id)} className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-all">
                                                             <Trash2 className="size-3.5" />
                                                         </button>

@@ -3,10 +3,51 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Globe, Github, Youtube, ExternalLink, Twitter, Linkedin, Mail, Smartphone, Code, Terminal, Layers, Database, Layout, Palette, Zap, Cpu, Server, Shield, Lock, Search, Settings, Share2, MessageSquare, Heart, Star, BookOpen, Coffee, Rocket, Target, Award, Briefcase, GraduationCap, Calendar, MapPin, Eye, MousePointer2, Component, Package, LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import Markdown from "react-markdown";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  globe: Globe,
+  github: Github,
+  youtube: Youtube,
+  twitter: Twitter,
+  linkedin: Linkedin,
+  email: Mail,
+  phone: Smartphone,
+  code: Code,
+  terminal: Terminal,
+  layers: Layers,
+  database: Database,
+  layout: Layout,
+  palette: Palette,
+  zap: Zap,
+  cpu: Cpu,
+  server: Server,
+  shield: Shield,
+  lock: Lock,
+  search: Search,
+  settings: Settings,
+  share: Share2,
+  message: MessageSquare,
+  heart: Heart,
+  star: Star,
+  book: BookOpen,
+  coffee: Coffee,
+  rocket: Rocket,
+  target: Target,
+  award: Award,
+  briefcase: Briefcase,
+  graduationCap: GraduationCap,
+  calendar: Calendar,
+  mapPin: MapPin,
+  eye: Eye,
+  mouse: MousePointer2,
+  component: Component,
+  package: Package,
+  external: ExternalLink,
+};
 
 function ProjectImage({ src, alt }: { src: string; alt: string }) {
   const [imageError, setImageError] = useState(false);
@@ -35,7 +76,8 @@ interface Props {
   image?: string;
   video?: string;
   links?: readonly {
-    icon: React.ReactNode;
+    icon?: React.ReactNode;
+    iconName?: string;
     type: string;
     href: string;
   }[];
@@ -85,23 +127,26 @@ export function ProjectCard({
         </Link>
         {links && links.length > 0 && (
           <div className="absolute top-2 right-2 flex flex-wrap gap-2">
-            {links.map((link, idx) => (
-              <Link
-                href={link.href}
-                key={idx}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Badge
-                  className="flex items-center gap-1.5 text-xs bg-black text-white hover:bg-black/90"
-                  variant="default"
+            {links.map((link, idx) => {
+              const IconComponent = link.iconName ? ICON_MAP[link.iconName.toLowerCase()] || Globe : null;
+              return (
+                <Link
+                  href={link.href}
+                  key={idx}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {link.icon}
-                  {link.type}
-                </Badge>
-              </Link>
-            ))}
+                  <Badge
+                    className="flex items-center gap-1.5 text-[10px] bg-black text-white hover:bg-black/90 py-0.5"
+                    variant="default"
+                  >
+                    {link.icon || (IconComponent && <IconComponent className="size-3" />)}
+                    {link.type}
+                  </Badge>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
