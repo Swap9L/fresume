@@ -1,4 +1,5 @@
 "use server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import prisma from "@/lib/prisma";
 import { DATA } from "@/data/resume";
@@ -9,6 +10,23 @@ import { redirect } from "next/navigation";
 
 export async function getResumeData(username?: string) {
     if (username) {
+        const targetUser = await prisma.user.findUnique({
+            where: { username: username }
+        });
+
+        if (targetUser) {
+            await prisma.resumeData.updateMany({
+                where: {
+                    userId: targetUser.id
+                },
+                data: {
+                    visits: {
+                        increment: 1
+                    }
+                }
+            });
+        }
+
         return await prisma.resumeData.findFirst({
             where: {
                 user: {

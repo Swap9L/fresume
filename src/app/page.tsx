@@ -2,15 +2,18 @@ import BlurFade from "@/components/magicui/blur-fade";
 import BlurFadeText from "@/components/magicui/blur-fade-text";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { SearchBar } from "@/components/search/search-bar";
 
 export default function Page() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-8">
-      <div className="max-w-4xl space-y-4  flex flex-col items-center justify-center">
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 pb-0 text-center space-y-8 relative">
+      <BlurFade delay={0.3} className="w-full absolute top-21 left-1/2 -translate-x-1/2 z-[100]">
+        <SearchBar />
+      </BlurFade>
+
+      <div className="max-w-4xl space-y-4 flex flex-col items-center justify-center">
         <BlurFadeText
-          text={`F___ Resume 
-Stop sending boring PDF
-Put your resume on the internet`}
+          text={"F___ Resume \nStop sending boring PDF\nPut your resume on the internet"}
           className="text-3xl md:text-6xl font-bold tracking-tighter whitespace-pre-line"
         />
         <BlurFade delay={0.1}>
@@ -37,7 +40,7 @@ Put your resume on the internet`}
           </Button>
         </div>
       </BlurFade>
-      {/* 
+      {/*
       <BlurFade delay={0.3} className="pt-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left max-w-5xl">
           <div className="p-6 border rounded-2xl bg-card">
@@ -55,9 +58,27 @@ Put your resume on the internet`}
         </div>
       </BlurFade> */}
 
-      <footer className="absolute bottom-0 text-sm text-muted-foreground">
-        © {new Date().getFullYear()} FResume. All rights reserved.
+      {/* <footer className="absolute bottom-0 top-2 text-sm text-muted-foreground">
+        
+        <span></span>
+        &copy; {new Date().getFullYear()} FResume. All rights reserved.
+      </footer> */}
+
+      <footer className="absolute bottom-0 left-0 w-full flex justify-between px-6 py-1 text-xs md:text-sm text-muted-foreground font-mono z-0">
+        <div className="flex items-center gap-1">
+          <span className="text-green-500">$</span>
+          <span>made_by:</span>
+          <a href="https://x.com/swap999l/" target="_blank">
+            <span className="text-amber-500 hover:text-amber-400 transition-colors cursor-pointer">
+              &quot;D. Swapnil&quot;
+            </span></a>
+          <span className="w-2 h-4 bg-muted-foreground/60 animate-pulse ml-1"></span>
+        </div>
+
+        <div className="opacity-70">
+          <span>{new Date().getFullYear()} © F___Resume </span>
+        </div>
       </footer>
-    </main>
+    </main >
   );
 }

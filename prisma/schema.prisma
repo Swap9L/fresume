@@ -74,6 +74,7 @@ model Verification {
 
 model ResumeData {
   id           String           @id @default(cuid())
+  visits       Int              @default(0)
   name         String
   initials     String
   url          String
