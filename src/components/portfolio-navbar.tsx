@@ -72,74 +72,77 @@ export function PortfolioNavbar({ socials = [], navbarItems = [] }: PortfolioNav
 
     return (
         <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30">
-            <Dock className="z-50 pointer-events-auto relative h-14 p-2 w-fit mx-auto flex gap-2 border bg-card/90 backdrop-blur-3xl shadow-[0_0_10px_3px] shadow-primary/5">
+            {/* Scrollable wrapper — hidden scrollbar, full width. pb-10 gives space for hover animation since overflow-x:auto clips overflow-y */}
+            <div className="pointer-events-auto w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] flex justify-center px-4 pb-0 pt-12 -mt-12">
+                <Dock className="z-50 relative h-14 p-2 w-max flex gap-2 border bg-card/90 backdrop-blur-3xl shadow-[0_0_10px_3px] shadow-primary/5">
 
-                {/* Nav Items (e.g. Home link) */}
-                {hasNavItems && navbarItems.map((item) => {
-                    const Icon = getIcon(item.iconName ?? "home");
-                    const isExternal = item.href.startsWith("http");
-                    return (
-                        <Tooltip key={item.href}>
-                            <TooltipTrigger asChild>
-                                <a href={item.href} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener noreferrer" : undefined}>
-                                    <DockIcon className={dockIconClass}>
-                                        <Icon className="size-full rounded-sm overflow-hidden object-contain" />
-                                    </DockIcon>
-                                </a>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={8} className={tooltipContentClass}>
-                                <p>{item.label}</p>
-                                <TooltipArrow className="fill-primary" />
-                            </TooltipContent>
-                        </Tooltip>
-                    );
-                })}
+                    {/* Nav Items (e.g. Home link) */}
+                    {hasNavItems && navbarItems.map((item) => {
+                        const Icon = getIcon(item.iconName ?? "home");
+                        const isExternal = item.href.startsWith("http");
+                        return (
+                            <Tooltip key={item.href}>
+                                <TooltipTrigger asChild>
+                                    <a href={item.href} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener noreferrer" : undefined}>
+                                        <DockIcon className={dockIconClass}>
+                                            <Icon className="size-full rounded-sm overflow-hidden object-contain" />
+                                        </DockIcon>
+                                    </a>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={8} className={tooltipContentClass}>
+                                    <p>{item.label}</p>
+                                    <TooltipArrow className="fill-primary" />
+                                </TooltipContent>
+                            </Tooltip>
+                        );
+                    })}
 
-                {/* Separator between nav items and socials */}
-                {(hasNavItems && hasNavSocials) && (
-                    <Separator orientation="vertical" className="h-2/3 m-auto w-px bg-border" />
-                )}
+                    {/* Separator between nav items and socials */}
+                    {(hasNavItems && hasNavSocials) && (
+                        <Separator orientation="vertical" className="h-2/3 m-auto w-px bg-border" />
+                    )}
 
-                {/* Social Links (only those marked navbar: true) */}
-                {navSocials.map((social) => {
-                    const Icon = getIcon(social.iconName);
-                    const isExternal = social.url.startsWith("http");
-                    return (
-                        <Tooltip key={social.id}>
-                            <TooltipTrigger asChild>
-                                <a href={social.url} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener noreferrer" : undefined}>
-                                    <DockIcon className={dockIconClass}>
-                                        <Icon className="size-full rounded-sm overflow-hidden object-contain" />
-                                    </DockIcon>
-                                </a>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={8} className={tooltipContentClass}>
-                                <p>{social.name}</p>
-                                <TooltipArrow className="fill-primary" />
-                            </TooltipContent>
-                        </Tooltip>
-                    );
-                })}
+                    {/* Social Links (only those marked navbar: true) */}
+                    {navSocials.map((social) => {
+                        const Icon = getIcon(social.iconName);
+                        const isExternal = social.url.startsWith("http");
+                        return (
+                            <Tooltip key={social.id}>
+                                <TooltipTrigger asChild>
+                                    <a href={social.url} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener noreferrer" : undefined}>
+                                        <DockIcon className={dockIconClass}>
+                                            <Icon className="size-full rounded-sm overflow-hidden object-contain" />
+                                        </DockIcon>
+                                    </a>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={8} className={tooltipContentClass}>
+                                    <p>{social.name}</p>
+                                    <TooltipArrow className="fill-primary" />
+                                </TooltipContent>
+                            </Tooltip>
+                        );
+                    })}
 
-                {/* Separator before theme toggle */}
-                {(hasNavItems || hasNavSocials) && (
-                    <Separator orientation="vertical" className="h-2/3 m-auto w-px bg-border" />
-                )}
+                    {/* Separator before theme toggle */}
+                    {(hasNavItems || hasNavSocials) && (
+                        <Separator orientation="vertical" className="h-2/3 m-auto w-px bg-border" />
+                    )}
 
-                {/* Theme Toggle — always present */}
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <DockIcon className={dockIconClass}>
-                            <ModeToggle className="size-full cursor-pointer" />
-                        </DockIcon>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={8} className={tooltipContentClass}>
-                        <p>Theme</p>
-                        <TooltipArrow className="fill-primary" />
-                    </TooltipContent>
-                </Tooltip>
+                    {/* Theme Toggle — always present */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <DockIcon className={dockIconClass}>
+                                <ModeToggle className="size-full cursor-pointer" />
+                            </DockIcon>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={8} className={tooltipContentClass}>
+                            <p>Theme</p>
+                            <TooltipArrow className="fill-primary" />
+                        </TooltipContent>
+                    </Tooltip>
 
-            </Dock>
+                </Dock>
+            </div>
         </div>
     );
 }

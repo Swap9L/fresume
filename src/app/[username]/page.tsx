@@ -63,16 +63,16 @@ export default async function Page({ params }: { params: Promise<{ username: str
           {/* ── Hero (always shown) ── */}
           <section id="hero">
             <div className="mx-auto w-full max-w-2xl space-y-8">
-              <div className="gap-2 flex justify-between">
-                <div className="flex-col flex flex-1 space-y-1.5">
+              <div className="gap-2 flex justify-between items-start md:items-center">
+                <div className="flex-col flex flex-1 min-w-0 space-y-1.5">
                   <BlurFadeText
                     delay={BLUR_FADE_DELAY}
-                    className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none"
+                    className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none break-words"
                     yOffset={8}
                     text={`Hi, I'm ${DATA.name.split(" ")[0]}`}
                   />
                   <BlurFadeText
-                    className="max-w-[600px] md:text-xl text-muted-foreground"
+                    className="max-w-[600px] md:text-xl text-muted-foreground break-words"
                     delay={BLUR_FADE_DELAY * 2}
                     text={DATA.description}
                   />
@@ -80,17 +80,17 @@ export default async function Page({ params }: { params: Promise<{ username: str
                     <BlurFade delay={BLUR_FADE_DELAY * 2.5}>
                       <Link
                         href={`mailto:${DATA.contact.email}`}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:underline transition-all mt-2"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:underline transition-all mt-2 truncate max-w-full"
                       >
-                        <Mail className="size-4" />
-                        {DATA.contact.email}
+                        <Mail className="size-4 shrink-0" />
+                        <span className="truncate">{DATA.contact.email}</span>
                       </Link>
                     </BlurFade>
                   )}
                 </div>
                 <BlurFade delay={BLUR_FADE_DELAY}>
-                  <Avatar className="size-32 sm:size-36 border flex-shrink-0">
-                    <AvatarImage alt={DATA.name} src={DATA.avatarUrl} />
+                  <Avatar className="size-28 sm:size-32 md:size-36 border flex-shrink-0 mt-2 md:mt-0">
+                    <AvatarImage alt={DATA.name} src={DATA.avatarUrl} className="object-cover" />
                     <AvatarFallback>{DATA.initials}</AvatarFallback>
                   </Avatar>
                 </BlurFade>
